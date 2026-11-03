@@ -40,21 +40,47 @@ def ask_agent(conversation_id, user_input):
         )
 
 
+DOWNLOADED_IDS = set()  # archivos ya descargados (para no repetirlos en cada respuesta)
+IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+
+
+def _save_container_file(container_id, file_id, filename):
+    data = openai.containers.files.content.retrieve(file_id=file_id, container_id=container_id)
+    path = OUTPUT_DIR / Path(filename).name
+    path.write_bytes(data.read())
+    DOWNLOADED_IDS.add(file_id)
+    print(f"[charts] saved {path}")
+    return path
+
+
 def download_files(response):
     """Descarga los gráficos/archivos generados por Code Interpreter."""
     paths = []
+    container_ids = set()
+
+    # Depuración: qué devuelve el agente
+    print("[debug] output items:", [item.type for item in response.output])
+
     for item in response.output:
-        if item.type != "message":
-            continue
-        for content in item.content:
-            for ann in getattr(content, "annotations", None) or []:
-                if ann.type == "container_file_citation":
-                    data = openai.containers.files.content.retrieve(
-                        file_id=ann.file_id, container_id=ann.container_id
-                    )
-                    path = OUTPUT_DIR / ann.filename
-                    path.write_bytes(data.read())
-                    paths.append(path)
+        # 1) Contenedor donde Code Interpreter ejecutó el código
+        if item.type == "code_interpreter_call" and getattr(item, "container_id", None):
+            container_ids.add(item.container_id)
+        # 2) Archivos enlazados explícitamente en la respuesta
+        if item.type == "message":
+            for content in item.content:
+                for ann in getattr(content, "annotations", None) or []:
+                    if getattr(ann, "type", "") == "container_file_citation":
+                        container_ids.add(ann.container_id)
+                        if ann.file_id not in DOWNLOADED_IDS:
+                            paths.append(_save_container_file(ann.container_id, ann.file_id, ann.filename))
+
+    # 3) Archivos creados en el contenedor aunque el agente no los haya enlazado
+    for container_id in container_ids:
+        for f in openai.containers.files.list(container_id=container_id):
+            if f.id in DOWNLOADED_IDS or getattr(f, "source", None) == "user":
+                continue
+            paths.append(_save_container_file(container_id, f.id, f.path))
+
     return paths
 
 
@@ -90,7 +116,7 @@ def bot_reply(history, conversation_id):
 
     try:
         for path in download_files(response):
-            if path.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
+            if path.suffix.lower() in IMAGE_EXT:
                 history.append({"role": "assistant", "content": gr.Image(str(path))})
             else:
                 history.append({"role": "assistant", "content": gr.File(str(path))})
