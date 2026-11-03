@@ -2,7 +2,5 @@ azure-ai-projects>=2.3.0
 azure-identity
 
 openai>=3.0.0
-streamlit
-pandas
-matplotlib
 python-dotenv
+gradio>=5.20,<6
