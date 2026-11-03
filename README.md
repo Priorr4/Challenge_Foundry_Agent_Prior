@@ -8,7 +8,7 @@ Asistente musical inteligente construido con **Microsoft Foundry**. Ayuda a desc
 
 ## 🤖 Descripción del agente
 
-**Spotify AI Assistant** es un agente creado en el portal de Microsoft Foundry (`spotify-ai-assistant`) sobre el modelo existente del proyecto del laboratorio (`gpt-6-luna`). Actúa como un experto musical cercano y entusiasta: recomienda música explicando *por qué* encaja con los gustos del usuario, responde preguntas sobre géneros, artistas e historia de la música, y analiza datos de escucha con cálculos y gráficos reales.
+**Spotify AI Assistant** es un agente creado en el portal de Microsoft Foundry (`spotify-ai-assistant`) sobre el modelo existente del proyecto del laboratorio (`gpt-5.4-mini`). Actúa como un experto musical cercano y entusiasta: recomienda música explicando *por qué* encaja con los gustos del usuario, responde preguntas sobre géneros, artistas e historia de la música, y analiza datos de escucha con cálculos y gráficos reales.
 
 ### Funciones principales
 
